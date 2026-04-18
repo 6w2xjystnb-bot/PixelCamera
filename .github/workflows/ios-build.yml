@@ -22,9 +22,11 @@ jobs:
         xcode-select -p || true
         xcodebuild -version || true
       
+    - name: List project
+      run: xcodebuild -project PixelCamera.xcodeproj -list
+      
     - name: Build unsigned .app for device (arm64)
       run: |
-        set -x
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
           -scheme PixelCamera \
@@ -37,14 +39,13 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           EXPANDED_CODE_SIGN_IDENTITY="" \
-          DEVELOPMENT_TEAM="" \
-          | tee build.log | xcpretty || true
-        echo "=== Build log tail ==="
-        tail -n 100 build.log || true
+          DEVELOPMENT_TEAM="" > build.log 2>&1 || true
+        echo "========== BUILD LOG =========="
+        cat build.log
+        echo "==============================="
           
     - name: Package IPA with ad-hoc signing
       run: |
-        set -x
         mkdir -p Payload
         APP_PATH=$(find build -name "PixelCamera.app" -type d | head -n 1)
         if [ -z "$APP_PATH" ]; then
@@ -54,17 +55,9 @@ jobs:
         fi
         echo "Found app: $APP_PATH"
         cp -R "$APP_PATH" Payload/
-        
-        # Ensure executable permissions
         chmod +x Payload/PixelCamera.app/PixelCamera
-        
-        # Ad-hoc sign for sideloading compatibility
         codesign --force --deep --sign - Payload/PixelCamera.app
-        
-        # Verify signature
         codesign -dv Payload/PixelCamera.app || true
-        
-        # Create IPA
         zip -r PixelCamera-sideload.ipa Payload
         rm -rf Payload
         ls -lh PixelCamera-sideload.ipa
