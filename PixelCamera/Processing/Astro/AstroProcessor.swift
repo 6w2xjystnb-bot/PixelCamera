@@ -3,7 +3,7 @@ import AVFoundation
 import CoreImage
 import CoreMotion
 
-actor AstroProcessor {
+class AstroProcessor {
     private let starTracker = StarTracker.shared
     private let darkFrameSubtractor = DarkFrameSubtractor.shared
     private let starStacker = StarStacker.shared
@@ -15,7 +15,7 @@ actor AstroProcessor {
         
         await CameraManager.shared.updateProcessingState(.capturing(frame: photos.count, total: photos.count))
         
-        let images = await BurstCaptureManager.shared.collectBurst(photos: photos)
+        let images = try await BurstCaptureManager.shared.collectBurst(photos: photos)
         guard images.count >= 10 else {
             throw CameraError.processingFailed("Not enough valid frames")
         }

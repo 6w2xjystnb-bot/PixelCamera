@@ -3,7 +3,7 @@ import AVFoundation
 import CoreImage
 import Accelerate
 
-actor SuperResProcessor {
+class SuperResProcessor {
     private let aligner = SubpixelAligner.shared
     private let reconstructor = DetailReconstructor.shared
     
@@ -12,7 +12,7 @@ actor SuperResProcessor {
             throw CameraError.processingFailed("Need at least 4 frames for Super Res")
         }
         
-        let images = await BurstCaptureManager.shared.collectBurst(photos: photos)
+        let images = try await BurstCaptureManager.shared.collectBurst(photos: photos)
         guard images.count >= 4 else {
             throw CameraError.processingFailed("Not enough valid images")
         }
