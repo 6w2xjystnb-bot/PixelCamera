@@ -1,0 +1,23 @@
+name: Test Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Hello
+      run: |
+        echo "Hello from macOS"
+        uname -a
+        sw_vers
+        xcode-select -p || true
+        xcodebuild -version || true
+    - name: Upload test artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-file
+        path: README.md
