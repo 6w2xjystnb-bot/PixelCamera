@@ -22,19 +22,7 @@ jobs:
     - name: Show Xcode version
       run: xcodebuild -version
       
-    - name: Show build settings
-      run: xcodebuild -project PixelCamera.xcodeproj -scheme PixelCamera -showBuildSettings
-      
-    - name: Build for Simulator
-      run: |
-        xcodebuild clean build \
-          -project PixelCamera.xcodeproj \
-          -scheme PixelCamera \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0' \
-          CODE_SIGNING_ALLOWED=NO \
-          | xcpretty
-      
-    - name: Build unsigned .app for device
+    - name: Build unsigned .app for device (arm64)
       run: |
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
@@ -42,13 +30,15 @@ jobs:
           -configuration Release \
           -sdk iphoneos \
           -derivedDataPath build \
+          ARCHS=arm64 \
+          ONLY_ACTIVE_ARCH=NO \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           EXPANDED_CODE_SIGN_IDENTITY="" \
           | xcpretty
           
-    - name: Package unsigned IPA
+    - name: Package IPA with ad-hoc signing
       run: |
         mkdir -p Payload
         APP_PATH=$(find build -name "PixelCamera.app" -type d | head -n 1)
@@ -57,21 +47,26 @@ jobs:
           find build -type d -name "*.app"
           exit 1
         fi
+        echo "Found app: $APP_PATH"
         cp -R "$APP_PATH" Payload/
-        zip -r PixelCamera-unsigned.ipa Payload
+        
+        # Ensure executable permissions
+        chmod +x Payload/PixelCamera.app/PixelCamera
+        
+        # Ad-hoc sign for sideloading compatibility
+        codesign --force --deep --sign - Payload/PixelCamera.app
+        
+        # Verify signature
+        codesign -dv Payload/PixelCamera.app || true
+        
+        # Create IPA
+        zip -r PixelCamera-sideload.ipa Payload
         rm -rf Payload
-        ls -lh PixelCamera-unsigned.ipa
+        ls -lh PixelCamera-sideload.ipa
         
     - name: Upload IPA artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PixelCamera-unsigned-ipa
-        path: PixelCamera-unsigned.ipa
-        retention-days: 30
-        
-    - name: Upload .app artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: PixelCamera-unsigned-app
-        path: build/**/PixelCamera.app
+        name: PixelCamera-sideload-ipa
+        path: PixelCamera-sideload.ipa
         retention-days: 30
