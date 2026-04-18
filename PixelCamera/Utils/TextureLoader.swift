@@ -5,7 +5,7 @@ import CoreImage
 import CoreVideo
 
 final class TextureLoader {
-    static let shared = TextureLoader()
+    nonisolated(unsafe) static let shared = TextureLoader()
     private let context = MetalContext.shared
     
     func texture(from pixelBuffer: CVPixelBuffer, pixelFormat: MTLPixelFormat = .bgra8Unorm) -> MTLTexture? {
@@ -107,7 +107,7 @@ final class TextureLoader {
 }
 
 final class TextureCache {
-    static let shared = TextureCache()
+    nonisolated(unsafe) static let shared = TextureCache()
     let cache: CVMetalTextureCache
     
     private init() {
