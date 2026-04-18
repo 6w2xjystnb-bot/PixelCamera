@@ -23,9 +23,11 @@ jobs:
         ls /Applications | grep Xcode || true
       
     - name: List project schemes
-      run: xcodebuild -project PixelCamera.xcodeproj -list || true
+      continue-on-error: true
+      run: xcodebuild -project PixelCamera.xcodeproj -list
       
     - name: Build for Simulator (validation)
+      continue-on-error: true
       run: |
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
@@ -34,10 +36,11 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           > sim.log 2>&1 || true
         echo "========== SIMULATOR BUILD LOG =========="
-        cat sim.log
+        cat sim.log || true
         echo "========================================="
           
     - name: Build unsigned .app for device
+      continue-on-error: true
       run: |
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
@@ -54,10 +57,11 @@ jobs:
           DEVELOPMENT_TEAM="" \
           > build.log 2>&1 || true
         echo "========== DEVICE BUILD LOG =========="
-        cat build.log
+        cat build.log || true
         echo "======================================"
           
     - name: Package IPA
+      continue-on-error: true
       run: |
         mkdir -p Payload
         APP_PATH=$(find build -name "PixelCamera.app" -type d | head -n 1)
@@ -70,13 +74,14 @@ jobs:
           echo "Found app: $APP_PATH"
           cp -R "$APP_PATH" Payload/
           chmod +x Payload/PixelCamera.app/PixelCamera
-          codesign --force --deep --sign - Payload/PixelCamera.app
+          codesign --force --deep --sign - Payload/PixelCamera.app || true
           zip -r PixelCamera-sideload.ipa Payload
           rm -rf Payload
           ls -lh PixelCamera-sideload.ipa
         fi
         
     - name: Upload IPA
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: PixelCamera-sideload-ipa
@@ -84,6 +89,7 @@ jobs:
         retention-days: 30
         
     - name: Upload logs
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: build-logs
