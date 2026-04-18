@@ -1,0 +1,43 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build PixelCamera
+    runs-on: macos-15
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode 26
+      run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+      
+    - name: Show Xcode version
+      run: xcodebuild -version
+      
+    - name: Show build settings
+      run: xcodebuild -project PixelCamera.xcodeproj -scheme PixelCamera -showBuildSettings
+      
+    - name: Build
+      run: |
+        xcodebuild clean build \
+          -project PixelCamera.xcodeproj \
+          -scheme PixelCamera \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0' \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty
+      
+    - name: Build for device (unsigned)
+      run: |
+        xcodebuild clean build \
+          -project PixelCamera.xcodeproj \
+          -scheme PixelCamera \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty
