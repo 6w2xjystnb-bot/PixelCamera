@@ -1,10 +1,11 @@
-name: iOS Build
+name: iOS Build + IPA
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -24,7 +25,7 @@ jobs:
     - name: Show build settings
       run: xcodebuild -project PixelCamera.xcodeproj -scheme PixelCamera -showBuildSettings
       
-    - name: Build
+    - name: Build for Simulator
       run: |
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
@@ -33,11 +34,44 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           | xcpretty
       
-    - name: Build for device (unsigned)
+    - name: Build unsigned .app for device
       run: |
         xcodebuild clean build \
           -project PixelCamera.xcodeproj \
           -scheme PixelCamera \
-          -destination 'generic/platform=iOS' \
+          -configuration Release \
+          -sdk iphoneos \
+          -derivedDataPath build \
           CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          EXPANDED_CODE_SIGN_IDENTITY="" \
           | xcpretty
+          
+    - name: Package unsigned IPA
+      run: |
+        mkdir -p Payload
+        APP_PATH=$(find build -name "PixelCamera.app" -type d | head -n 1)
+        if [ -z "$APP_PATH" ]; then
+          echo "ERROR: PixelCamera.app not found"
+          find build -type d -name "*.app"
+          exit 1
+        fi
+        cp -R "$APP_PATH" Payload/
+        zip -r PixelCamera-unsigned.ipa Payload
+        rm -rf Payload
+        ls -lh PixelCamera-unsigned.ipa
+        
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PixelCamera-unsigned-ipa
+        path: PixelCamera-unsigned.ipa
+        retention-days: 30
+        
+    - name: Upload .app artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PixelCamera-unsigned-app
+        path: build/**/PixelCamera.app
+        retention-days: 30
