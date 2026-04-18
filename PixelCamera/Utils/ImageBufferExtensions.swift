@@ -52,7 +52,7 @@ extension CVPixelBuffer {
             54, 183, 19, 0
         ]
         
-        vImageMatrixMultiply_ARGB8888ToPlanar8(&srcBuffer, &dstBuffer, matrix, 8, nil, vImage_Flags(kvImageNoFlags))
+        vImageMatrixMultiply_ARGB8888ToPlanar8(&srcBuffer, &dstBuffer, matrix, 8, nil, nil, vImage_Flags(kvImageNoFlags))
         
         return output
     }
